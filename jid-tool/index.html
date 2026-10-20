@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JID Converter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:monospace}
+body{background:#080808;color:#e5e5e5;min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}
+.card{background:#101010;border:1px solid #1e1e1e;width:100%;max-width:420px;padding:28px;border-radius:10px}
+h1{font-size:16px;letter-spacing:2px}
+.sub{color:#555;font-size:11px;margin:6px 0 22px}
+input{width:100%;background:#000;border:1px solid #222;color:#fff;padding:12px;border-radius:6px;outline:none;font-size:13px}
+input:focus{border-color:#333}
+button{width:100%;margin-top:12px;background:#fff;color:#000;border:none;padding:11px;border-radius:6px;font-weight:700;cursor:pointer}
+button:disabled{opacity:.4}
+.box{margin-top:18px;background:#000;border:1px solid #222;border-radius:6px;padding:14px;display:none}
+.line{margin-bottom:10px}
+.line span{color:#666;font-size:9px;display:block;letter-spacing:1px;margin-bottom:2px}
+.line div{font-size:12px;word-break:break-all}
+.jid{border:1px dashed #2a2a2a;padding:8px;border-radius:4px;margin-top:4px;background:#080808}
+.copy{margin-top:10px;background:transparent;border:1px solid #222;color:#fff}
+.copy:hover{background:#fff;color:#000}
+.err{color:#ff3b3b;font-size:11px;margin-top:10px;display:none;text-align:center}
+.stat{font-size:10px;color:#444;margin-top:8px;text-align:center}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>[ CHANNEL > JID ]</h1>
+  <div class="sub">Standalone tool - no bot required</div>
+  <input id="link" placeholder="https://whatsapp.com/channel/..." />
+  <button id="btn" onclick="convert()">CONVERT</button>
+  <div class="stat" id="stat">Checking service...</div>
+  <div class="err" id="err"></div>
+  <div class="box" id="box">
+    <div class="line"><span>NAME</span><div id="name">-</div></div>
+    <div class="line"><span>INVITE</span><div id="inv">-</div></div>
+    <div class="line"><span>JID</span><div class="jid" id="jid">-</div></div>
+    <button class="copy" onclick="copyJ()">[ COPY JID ]</button>
+  </div>
+</div>
+<script>
+let cur='';
+async function check(){try{let r=await fetch('/api/status');let d=await r.json();document.getElementById('stat').textContent=d.ready?'[ READY ]':'[ NOT READY - SCAN QR IN TERMINAL ]'}catch{}}
+check(); setInterval(check,3000);
+async function convert(){
+  let link=document.getElementById('link').value.trim();
+  let btn=document.getElementById('btn'), err=document.getElementById('err'), box=document.getElementById('box'), stat=document.getElementById('stat');
+  if(!link){err.textContent='Enter link'; err.style.display='block'; return}
+  btn.disabled=true; btn.textContent='CONVERTING...'; err.style.display='none'; box.style.display='none';
+  try{
+    let res=await fetch('/api/convert',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({link})});
+    let data=await res.json();
+    if(!data.success) throw new Error(data.error);
+    cur=data.jid;
+    document.getElementById('name').textContent=data.name||'-';
+    document.getElementById('inv').textContent=data.invite;
+    document.getElementById('jid').textContent=data.jid;
+    box.style.display='block'; stat.textContent='[ SUCCESS ]';
+  }catch(e){err.textContent='[ ERROR ] '+e.message; err.style.display='block'; stat.textContent=''}
+  finally{btn.disabled=false; btn.textContent='CONVERT'}
+}
+function copyJ(){navigator.clipboard.writeText(cur).then(()=>{let b=document.querySelector('.copy');b.textContent='[ COPIED ]';setTimeout(()=>b.textContent='[ COPY JID ]',1200)})}
+</script>
+</body>
+</html>
