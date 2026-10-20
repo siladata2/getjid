@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sila Login - QR & Pairing</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;font-family:sans-serif}
+body{background:#0a1014;color:#fff;display:flex;justify-content:center;padding:20px}
+.card{background:#111b21;width:100%;max-width:450px;border-radius:20px;padding:20px;text-align:center}
+.tabs{display:flex;gap:10px;margin:15px 0}
+.tab{flex:1;padding:12px;border-radius:10px;background:#202c33;border:none;color:#fff;cursor:pointer}
+.tab.active{background:#25D366;color:#000;font-weight:bold}
+#qrcode{background:#fff;padding:15px;border-radius:15px;display:inline-block;margin:15px 0}
+input{width:100%;padding:14px;border-radius:12px;border:none;background:#202c33;color:#fff;margin:10px 0;outline:none}
+button.action{width:100%;padding:14px;background:#25D366;border:none;border-radius:12px;font-weight:bold;cursor:pointer}
+.code-box{font-size:32px;letter-spacing:8px;background:#202c33;padding:15px;border-radius:12px;margin:15px 0;font-weight:bold;color:#25D366}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>Sila Tech Login 🔐</h2>
+<div class="tabs">
+<button class="tab active" id="tabQR" onclick="showTab('qr')">QR CODE</button>
+<button class="tab" id="tabPair" onclick="showTab('pair')">PAIRING CODE</button>
+</div>
+
+<div id="qrSection">
+<p>Settings > Linked Devices > Link a Device</p>
+<div id="qrcode"></div>
+<p id="statusQR">Inapakia...</p>
+</div>
+
+<div id="pairSection" style="display:none">
+<p>Weka namba yako bila + (mfano 255752xxx)</p>
+<input id="phone" placeholder="2557xxxxxxxx">
+<button class="action" onclick="getPairing()">PATA CODE</button>
+<div id="pairResult" style="display:none">
+<p>Ingiza hii code kwenye WhatsApp yako:</p>
+<div class="code-box" id="pairCode">--------</div>
+<p style="font-size:12px;color:#8696a0">WhatsApp > Linked Devices > Link with phone number > Andika hii code</p>
+</div>
+<p id="statusPair"></p>
+</div>
+
+<a href="/" style="color:#25D366;display:block;margin-top:15px">← Rudi Home</a>
+</div>
+
+<script>
+let qrDiv=document.getElementById('qrcode');
+function showTab(t){
+  document.getElementById('qrSection').style.display=t==='qr'?'block':'none';
+  document.getElementById('pairSection').style.display=t==='pair'?'block':'none';
+  document.getElementById('tabQR').classList.toggle('active',t==='qr');
+  document.getElementById('tabPair').classList.toggle('active',t==='pair');
+}
+
+async function loadQR(){
+  const r=await fetch('/api/qr'); const d=await r.json();
+  if(d.connected){document.getElementById('statusQR').textContent='✅ Bot Connected!'; qrDiv.innerHTML='';}
+  else if(d.qr){qrDiv.innerHTML=''; new QRCode(qrDiv,{text:d.qr,width:250,height:250}); document.getElementById('statusQR').textContent='Scan QR huu';}
+  else{document.getElementById('statusQR').textContent='Inasubiri QR...';}
+}
+loadQR(); setInterval(loadQR,4000);
+
+async function getPairing(){
+  const phone=document.getElementById('phone').value;
+  if(!phone) return alert('Weka namba');
+  document.getElementById('statusPair').textContent='Inaomba code...';
+  try{
+    const res=await fetch('/api/pairing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone})});
+    const data=await res.json();
+    if(data.success){
+      document.getElementById('pairResult').style.display='block';
+      document.getElementById('pairCode').textContent=data.code;
+      document.getElementById('statusPair').textContent='✅ Code imepatikana!';
+    } else alert(data.error);
+  }catch(e){alert(e.message)}
+}
+</script>
+</body>
+</html>
