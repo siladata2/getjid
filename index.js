@@ -207,5 +207,43 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// ====== API YA JID WEBSITE ======
+app.post('/api/getjid', async (req, res) => {
+  try {
+    if (!isConnected) return res.status(400).json({ success: false, error: 'Bot haijaunganishwa' });
+    
+    const { link } = req.body;
+    if (!link) return res.status(400).json({ success: false, error: 'Weka link' });
+
+    let inviteCode = link.trim();
+    const match = inviteCode.match(/channel\/([A-Za-z0-9]+)/);
+    if (match) inviteCode = match[1];
+
+    if (inviteCode.includes('@newsletter')) {
+      return res.json({ success: true, jid: inviteCode, name: 'Direct JID', invite: inviteCode });
+    }
+
+    let info;
+    try {
+      info = await sock.newsletterMetadata('invite', inviteCode);
+    } catch {
+      info = await sock.newsletterFetchInviteInfo(inviteCode);
+    }
+
+    const jid = info.id || info.jid;
+    const name = info.name || 'Unknown';
+    const followers = info.subscribers || 0;
+
+    res.json({ success: true, jid, name, followers, invite: inviteCode });
+
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/jid', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'jid.html'));
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Sila Tech Server: http://localhost:${PORT}`));
