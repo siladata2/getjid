@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sila Tech - Get JID</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:monospace}
+body{background:#0a0a0a;color:#e5e5e5;min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}
+.card{background:#111;border:1px solid #222;width:100%;max-width:450px;padding:30px;border-radius:12px}
+h1{font-size:18px;letter-spacing:2px;margin-bottom:5px}
+p.sub{color:#666;font-size:12px;margin-bottom:25px}
+label{font-size:11px;color:#888;letter-spacing:1px}
+input{width:100%;background:#000;border:1px solid #222;color:#fff;padding:12px;margin-top:8px;border-radius:6px;outline:none}
+input:focus{border-color:#444}
+button.main{width:100%;margin-top:15px;background:#fff;color:#000;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;letter-spacing:1px}
+button.main:disabled{opacity:.5;cursor:not-allowed}
+.result{margin-top:20px;background:#000;border:1px solid #222;border-radius:6px;padding:15px;display:none}
+.result .row{margin-bottom:10px;font-size:13px}
+.result .row span{color:#666;font-size:10px;display:block;margin-bottom:3px}
+.result .jid-box{background:#0a0a0a;border:1px dashed #333;padding:10px;border-radius:4px;word-break:break-all;font-size:12px;margin-top:5px}
+.btn-copy{background:transparent;border:1px solid #333;color:#fff;padding:8px 12px;border-radius:4px;cursor:pointer;font-size:11px;margin-top:10px;width:100%}
+.btn-copy:hover{background:#fff;color:#000}
+.status{font-size:11px;color:#888;margin-top:10px;text-align:center}
+.error{color:#ff4d4d;font-size:12px;margin-top:10px;display:none;text-align:center}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>[ GET CHANNEL JID ]</h1>
+  <p class="sub">Convert whatsapp channel link to JID</p>
+
+  <label>CHANNEL LINK</label>
+  <input id="link" placeholder="https://whatsapp.com/channel/0029Vb6..." />
+
+  <button class="main" id="btn" onclick="getJid()">GET JID</button>
+  
+  <div class="status" id="status"></div>
+  <div class="error" id="error"></div>
+
+  <div class="result" id="result">
+    <div class="row"><span>NAME</span><div id="rName">-</div></div>
+    <div class="row"><span>FOLLOWERS</span><div id="rFol">-</div></div>
+    <div class="row"><span>INVITE CODE</span><div id="rInv">-</div></div>
+    <div class="row"><span>JID</span><div class="jid-box" id="rJid">-</div></div>
+    <button class="btn-copy" onclick="copyJid()">[ COPY JID ]</button>
+  </div>
+</div>
+
+<script>
+let currentJid = '';
+async function getJid(){
+  const link = document.getElementById('link').value.trim();
+  const btn = document.getElementById('btn');
+  const status = document.getElementById('status');
+  const error = document.getElementById('error');
+  const result = document.getElementById('result');
+  
+  if(!link){ error.textContent='Weka link kwanza'; error.style.display='block'; return; }
+  
+  btn.disabled=true; btn.textContent='PROCESSING...';
+  status.textContent='> Converting...'; error.style.display='none'; result.style.display='none';
+  
+  try{
+    const res = await fetch('/api/getjid', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ link })
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error);
+    
+    currentJid = data.jid;
+    document.getElementById('rName').textContent = data.name;
+    document.getElementById('rFol').textContent = data.followers || '0';
+    document.getElementById('rInv').textContent = data.invite;
+    document.getElementById('rJid').textContent = data.jid;
+    
+    result.style.display='block';
+    status.textContent='[ SUCCESS ]';
+  }catch(e){
+    error.textContent='[ ERROR ] > ' + e.message;
+    error.style.display='block';
+    status.textContent='';
+  }finally{
+    btn.disabled=false; btn.textContent='GET JID';
+  }
+}
+
+function copyJid(){
+  navigator.clipboard.writeText(currentJid).then(()=>{
+    const b = document.querySelector('.btn-copy');
+    b.textContent='[ COPIED ]';
+    setTimeout(()=> b.textContent='[ COPY JID ]', 1500);
+  });
+}
+</script>
+</body>
+</html>
